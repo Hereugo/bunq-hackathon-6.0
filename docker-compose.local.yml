@@ -1,0 +1,109 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend:/app
+    command: uvicorn app.main:app --reload --host 0.0.0.0 --port 8080
+
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #     target: deps # Use 'deps' for development which includes the necessary build dependencies
+  #   volumes:
+  #     - ./frontend:/app
+  #     - /app/node_modules
+  #     - /app/.next
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - NODE_ENV=development
+  #     - BACKEND_URL=http://backend:8080
+  #     - POSTGRES_URL=postgresql://postgres:postgres@postgres:5432/app_db
+  #     - BLOB_STORAGE_ENDPOINT=http://minio:9000
+  #     - NEXT_PUBLIC_BLOB_STORAGE_ENDPOINT=http://localhost:9000
+  #     - BLOB_STORAGE_ACCESS_KEY=minioadmin
+  #     - BLOB_STORAGE_SECRET_KEY=minioadmin
+  #     - BLOB_STORAGE_BUCKET=app-bucket
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     minio:
+  #       condition: service_healthy
+  #   command: >
+  #     sh -c "
+  #       echo 'Waiting for PostgreSQL to be ready...' &&
+  #       sleep 5 &&
+  #       cd /app &&
+  #       npm run db:migrate &&
+  #       npm run dev
+  #     "
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "curl -f http://localhost:3000 || exit 1"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=app_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    volumes:
+      - minio_data:/data
+    command: server --console-address ":9001" /data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      sleep 5;
+      /usr/bin/mc config host add myminio http://minio:9000 minioadmin minioadmin;
+      /usr/bin/mc mb --ignore-existing myminio/app-bucket;
+      /usr/bin/mc anonymous set download myminio/app-bucket;
+      /usr/bin/mc policy set public myminio/app-bucket;
+      echo 'Minio bucket app-bucket created with public access policy';
+      exit 0;
+      "
+
+volumes:
+  postgres_data:
+  minio_data:

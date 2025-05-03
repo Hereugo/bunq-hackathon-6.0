@@ -2,6 +2,16 @@
 
 This repository contains a Next.js application with a frontend and backend setup, configured with Docker for both development and production environments.
 
+> [!TIP]
+> Some interesting directories:
+> - **AI handling:** `frontend/lib/ai/`
+> - **Agent tools:** `frontend/lib/ai/tools/`
+> - **LLM web componenets**`frontend/components/message.tsx`
+> - **Custom bunq API:** `backend/app/router`
+> - **Custom Github Copilot Prompts**: `.github/copilot-instructions.md`
+
+
+
 ## Project Structure
 
 ```

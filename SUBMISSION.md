@@ -27,6 +27,17 @@ Our YAAI Agent:
 
 You can ask him, in natural language, how much money you have, to send or receive money, about different transactions, even split the bill with a friend.
 
+This was done be integrating the following bunq API endpoints:
+- payments
+- draft payments
+- scheduled payments
+- cards
+- request inquiries
+- currency converstion (SEMI COMPLETE)
+- monetary accounts
+- notification filter (SEMI COMPLETE)
+- authentication
+
 ### How we built it
 
 To build YAAI Agent, we leaned heavily on existing tools and frameworks that helped us move fast without reinventing the wheel.
